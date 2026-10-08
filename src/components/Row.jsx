@@ -1,10 +1,34 @@
+import { useEffect, useRef, useState } from "react";
 import { img, titleOf, yearOf } from "../tmdb.js";
 
-export function Row({ title, children }) {
+// Fileira com setas clicáveis (aparecem ao passar o mouse; no celular basta arrastar)
+export function Row({ title, children, withText = false }) {
+  const ref = useRef(null);
+  const [can, setCan] = useState({ l: false, r: false });
+
+  const check = () => {
+    const el = ref.current;
+    if (!el) return;
+    const l = el.scrollLeft > 4;
+    const r = el.scrollLeft + el.clientWidth < el.scrollWidth - 4;
+    setCan((c) => (c.l === l && c.r === r ? c : { l, r }));
+  };
+  useEffect(() => {
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  const go = (dir) => ref.current.scrollBy({ left: dir * ref.current.clientWidth * 0.85, behavior: "smooth" });
+
   return (
     <section className="row">
       <h2>{title}</h2>
-      <div className="row-track">{children}</div>
+      <div className={`row-wrap ${withText ? "with-text" : ""}`}>
+        {can.l && <button className="row-arrow left" onClick={() => go(-1)} aria-label="Anterior">‹</button>}
+        <div className="row-track" ref={ref} onScroll={check}>{children}</div>
+        {can.r && <button className="row-arrow right" onClick={() => go(1)} aria-label="Próximos">›</button>}
+      </div>
     </section>
   );
 }
